@@ -5,9 +5,15 @@ name: Go
 
 on:
   push:
-    branches: ["main"]
+    # Triggers on push to any branch
   pull_request:
-    branches: ["main"]
+    # Triggers on pull request to any branch
+  workflow_dispatch:
+    # Allows manual triggering from GitHub UI
+  create:
+    # Triggers when branches or tags are created
+  delete:
+    # Triggers when branches or tags are deleted
 
 jobs:
   build:
