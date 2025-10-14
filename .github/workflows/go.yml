@@ -17,7 +17,7 @@ on:
 
 jobs:
   build:
-    runs-on: tenki-staging-ubuntu-22.04-large-4c-16g
+    runs-on: tenki-standard-autoscale
     steps:
     - uses: actions/checkout@v4
 
