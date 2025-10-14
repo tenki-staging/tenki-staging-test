@@ -17,7 +17,7 @@ on:
 
 jobs:
   build:
-    runs-on: tenki-standard-medium-2c-8g
+    runs-on: tenki-staging-ubuntu-22.04-large-4c-16g
     steps:
     - uses: actions/checkout@v4
 
