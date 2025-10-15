@@ -31,3 +31,6 @@ jobs:
 
     - name: Test
       run: go test -v ./...
+
+    - name: Sleep
+      run: sleep 120
