@@ -33,4 +33,4 @@ jobs:
       run: go test -v ./...
 
     - name: Sleep
-      run: sleep 120
+      run: sleep 360
