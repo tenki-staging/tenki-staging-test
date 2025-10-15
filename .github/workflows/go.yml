@@ -17,7 +17,7 @@ on:
 
 jobs:
   build:
-    runs-on: tenki-standard-medium-2c-8g
+    runs-on: tenki-staging-standard-medium-4c-8g
     steps:
     - uses: actions/checkout@v4
 
