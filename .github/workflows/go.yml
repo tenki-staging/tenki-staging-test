@@ -50,16 +50,16 @@ jobs:
       - name: Sleep
         run: sleep 90
 
-  build-7:
-    runs-on: tenki-staging-standard-medium-4c-8g
-    steps:
-      - uses: actions/checkout@v4
-      - name: Sleep
-        run: sleep 20
+  # build-7:
+  #   runs-on: tenki-staging-standard-medium-4c-8g
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Sleep
+  #       run: sleep 20
 
-  build-8:
-    runs-on: tenki-staging-standard-medium-4c-8g
-    steps:
-      - uses: actions/checkout@v4
-      - name: Sleep
-        run: sleep 20
+  # build-8:
+  #   runs-on: tenki-staging-standard-medium-4c-8g
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Sleep
+  #       run: sleep 20
