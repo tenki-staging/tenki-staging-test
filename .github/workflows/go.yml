@@ -13,7 +13,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Sleep
-        run: sleep 780
+        run: sleep 20
 
   # build-2:
   #   runs-on: tenki-staging-standard-medium-4c-8g
