@@ -9,7 +9,8 @@ on:
 
 jobs:
   build-1:
-    runs-on: tenki-staging-standard-medium-4c-8g
+    # runs-on: tenki-staging-standard-medium-4c-8g
+    runs-on: tenki-test
     steps:
       - uses: actions/checkout@v4
       - name: Sleep
