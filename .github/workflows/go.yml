@@ -9,7 +9,7 @@ on:
 
 jobs:
   build-1:
-    runs-on: tenki-staging-standard-medium-1c-2g
+    runs-on: tenki-standard-medium-4c-8g
     steps:
       - uses: actions/checkout@v4
       - name: Sleep and Print
