@@ -18,7 +18,7 @@ jobs:
           echo 111111
 
   build-2:
-    runs-on: tenki-staging-standard-medium-2c-4g
+    runs-on: tenki-staging-standard-medium-4c-8g
     steps:
       - uses: actions/checkout@v4
       - name: Sleep and Print
