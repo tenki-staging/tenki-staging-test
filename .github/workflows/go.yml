@@ -33,7 +33,7 @@ jobs:
       - name: Sleep and Print
         run: |
           sleep 20
-          echo 333333333
+          echo 3333333333
 
   # build-4:
   #   runs-on: tenki-staging-standard-small-2c-4g
