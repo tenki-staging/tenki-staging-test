@@ -35,14 +35,14 @@ jobs:
           sleep 20
           echo 3333333333
 
-  # build-4:
-  #   runs-on: tenki-staging-standard-small-2c-4g
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - name: Sleep and Print
-  #       run: |
-  #         sleep 15
-  #         echo 444444
+  build-4:
+    runs-on: tenki-staging-standard-small-2c-4g
+    steps:
+      - uses: actions/checkout@v4
+      - name: Sleep and Print
+        run: |
+          sleep 15
+          echo 444444
 
   # build-5:
   #   runs-on: tenki-staging-standard-medium-4c-8g
