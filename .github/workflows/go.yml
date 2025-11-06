@@ -106,3 +106,43 @@ jobs:
         run: |
           sleep 20
           echo 88888
+  build-12:
+    runs-on: tenki-staging-standard-medium-4c-8g
+    steps:
+      - uses: actions/checkout@v4
+      - name: Sleep and Print
+        run: |
+          sleep 20
+          echo 88888
+  build-13:
+    runs-on: tenki-staging-standard-medium-4c-8g
+    steps:
+      - uses: actions/checkout@v4
+      - name: Sleep and Print
+        run: |
+          sleep 20
+          echo 88888
+  build-14:
+    runs-on: tenki-staging-standard-medium-4c-8g
+    steps:
+      - uses: actions/checkout@v4
+      - name: Sleep and Print
+        run: |
+          sleep 20
+          echo 88888
+  build-15:
+    runs-on: tenki-staging-standard-medium-4c-8g
+    steps:
+      - uses: actions/checkout@v4
+      - name: Sleep and Print
+        run: |
+          sleep 20
+          echo 88888
+  build-16:
+    runs-on: tenki-staging-standard-medium-4c-8g
+    steps:
+      - uses: actions/checkout@v4
+      - name: Sleep and Print
+        run: |
+          sleep 20
+          echo 88888
