@@ -81,7 +81,7 @@ jobs:
           echo 88888
           
   build-9:
-    runs-on: tenki-staging-standard-medium-4c-8g
+    runs-on: tenki-staging-standard-autoscale
     steps:
       - uses: actions/checkout@v4
       - name: Sleep and Print
@@ -90,7 +90,7 @@ jobs:
           echo 9999
           
   build-10:
-    runs-on: tenki-staging-standard-medium-4c-8g
+    runs-on: tenki-staging-standard-autoscale
     steps:
       - uses: actions/checkout@v4
       - name: Sleep and Print
@@ -99,7 +99,7 @@ jobs:
           echo '10 10 10 10'
           
   build-11:
-    runs-on: tenki-staging-standard-medium-4c-8g
+    runs-on: tenki-staging-standard-autoscale
     steps:
       - uses: actions/checkout@v4
       - name: Sleep and Print
@@ -107,7 +107,7 @@ jobs:
           sleep 20
           echo '11 11 11 11'
   build-12:
-    runs-on: tenki-staging-standard-medium-4c-8g
+    runs-on: tenki-staging-standard-autoscale
     steps:
       - uses: actions/checkout@v4
       - name: Sleep and Print
@@ -115,7 +115,7 @@ jobs:
           sleep 20
           echo '12 12 12 12'
   build-13:
-    runs-on: tenki-staging-standard-medium-4c-8g
+    runs-on: tenki-staging-standard-autoscale
     steps:
       - uses: actions/checkout@v4
       - name: Sleep and Print
@@ -123,7 +123,7 @@ jobs:
           sleep 20
           echo '13 13 13 13'
   build-14:
-    runs-on: tenki-staging-standard-medium-4c-8g
+    runs-on: tenki-staging-standard-autoscale
     steps:
       - uses: actions/checkout@v4
       - name: Sleep and Print
@@ -131,7 +131,7 @@ jobs:
           sleep 20
           echo '14 14 14 14'
   build-15:
-    runs-on: tenki-staging-standard-medium-4c-8g
+    runs-on: tenki-staging-standard-autoscale
     steps:
       - uses: actions/checkout@v4
       - name: Sleep and Print
@@ -139,7 +139,7 @@ jobs:
           sleep 20
           echo '15 15 15 15'
   build-16:
-    runs-on: tenki-staging-standard-medium-4c-8g
+    runs-on: tenki-staging-standard-autoscale
     steps:
       - uses: actions/checkout@v4
       - name: Sleep and Print
