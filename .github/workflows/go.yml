@@ -9,7 +9,7 @@ on:
 
 jobs:
   build-1:
-    runs-on: tenki-staging-standard-medium-4c-8g
+    runs-on: tenki-staging-standard-autoscale
     steps:
       - uses: actions/checkout@v4
       - name: Sleep and Print
@@ -18,7 +18,7 @@ jobs:
           echo 11111111
 
   build-2:
-    runs-on: tenki-staging-standard-medium-4c-8g
+    runs-on: tenki-staging-standard-autoscale
     steps:
       - uses: actions/checkout@v4
       - name: Sleep and Print
@@ -27,7 +27,7 @@ jobs:
           echo 2222222222222222222222
 
   build-3:
-    runs-on: tenki-staging-standard-medium-4c-8g
+    runs-on: tenki-staging-standard-autoscale
     steps:
       - uses: actions/checkout@v4
       - name: Sleep and Print
@@ -36,7 +36,7 @@ jobs:
           echo 33333333333
 
   build-4:
-    runs-on: tenki-staging-standard-medium-4c-8g
+    runs-on: tenki-staging-standard-autoscale
     steps:
       - uses: actions/checkout@v4
       - name: Sleep and Print
@@ -45,7 +45,7 @@ jobs:
           echo 4444444444
 
   build-5:
-    runs-on: tenki-staging-standard-medium-4c-8g
+    runs-on: tenki-staging-standard-autoscale
     steps:
       - uses: actions/checkout@v4
       - name: Sleep and Print
@@ -54,7 +54,7 @@ jobs:
           echo 5555555
 
   build-6:
-    runs-on: tenki-staging-standard-medium-4c-8g
+    runs-on: tenki-staging-standard-autoscale
     steps:
       - uses: actions/checkout@v4
       - name: Sleep and Print
@@ -63,7 +63,7 @@ jobs:
           echo 66666
 
   build-7:
-    runs-on: tenki-staging-standard-medium-4c-8g
+    runs-on: tenki-staging-standard-autoscale
     steps:
       - uses: actions/checkout@v4
       - name: Sleep and Print
@@ -72,7 +72,7 @@ jobs:
           echo 77777
 
   build-8:
-    runs-on: tenki-staging-standard-medium-4c-8g
+    runs-on: tenki-staging-standard-autoscale
     steps:
       - uses: actions/checkout@v4
       - name: Sleep and Print
