@@ -8,14 +8,14 @@ on:
   delete:
 
 jobs:
-  build-1:
-    runs-on: tenki-staging-standard-medium-4c-8g
-    steps:
-      - uses: actions/checkout@v4
-      - name: Sleep and Print
-        run: |
-          sleep 200
-          echo 111111111
+  # build-1:
+  #   runs-on: tenki-staging-standard-medium-4c-8g
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Sleep and Print
+  #       run: |
+  #         sleep 200
+  #         echo 111111111
 
   # build-2:
   #   runs-on: tenki-staging-standard-medium-4c-8g
@@ -138,11 +138,11 @@ jobs:
   #       run: |
   #         sleep 200
   #         echo '15 15 15 15'
-  # build-16:
-  #   runs-on: tenki-staging-standard-autoscale
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - name: Sleep and Print
-  #       run: |
-  #         sleep 200
-  #         echo '16 16 16 16 16'
+  build-16:
+    runs-on: tenki-staging-standard-autoscale
+    steps:
+      - uses: actions/checkout@v4
+      - name: Sleep and Print
+        run: |
+          sleep 200
+          echo '16 16 16 16 16'
