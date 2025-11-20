@@ -24,7 +24,7 @@ jobs:
       - name: Sleep and Print
         run: |
           sleep 200
-          echo 22222
+          echo 2222222
 
   build-3:
     runs-on: tenki-staging-standard-medium-4c-8g
