@@ -9,7 +9,7 @@ on:
 
 jobs:
   build-1:
-    runs-on: tenki-staging-autoscale
+    runs-on: tenki-staging-standard-autoscale
     steps:
       - uses: actions/checkout@v4
       - name: Sleep and Print
