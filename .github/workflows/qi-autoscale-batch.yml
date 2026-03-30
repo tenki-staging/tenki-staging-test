@@ -1,0 +1,10 @@
+name: "QI: Autoscale Batch (5 jobs)"
+on:
+  workflow_dispatch:
+
+jobs:
+  auto-1:  { runs-on: tenki-staging-standard-autoscale, steps: [{ run: "sleep 60 && echo auto-1" }] }
+  auto-2:  { runs-on: tenki-staging-standard-autoscale, steps: [{ run: "sleep 60 && echo auto-2" }] }
+  auto-3:  { runs-on: tenki-staging-standard-autoscale, steps: [{ run: "sleep 60 && echo auto-3" }] }
+  auto-4:  { runs-on: tenki-staging-standard-autoscale, steps: [{ run: "sleep 60 && echo auto-4" }] }
+  auto-5:  { runs-on: tenki-staging-standard-autoscale, steps: [{ run: "sleep 60 && echo auto-5" }] }
