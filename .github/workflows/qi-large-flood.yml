@@ -1,0 +1,40 @@
+name: "QI: Large Flood (35 jobs)"
+on:
+  workflow_dispatch:
+
+jobs:
+  large-1:  { runs-on: tenki-staging-standard-large-8c-16g, steps: [{ run: "sleep 60 && echo large-1" }] }
+  large-2:  { runs-on: tenki-staging-standard-large-8c-16g, steps: [{ run: "sleep 60 && echo large-2" }] }
+  large-3:  { runs-on: tenki-staging-standard-large-8c-16g, steps: [{ run: "sleep 60 && echo large-3" }] }
+  large-4:  { runs-on: tenki-staging-standard-large-8c-16g, steps: [{ run: "sleep 60 && echo large-4" }] }
+  large-5:  { runs-on: tenki-staging-standard-large-8c-16g, steps: [{ run: "sleep 60 && echo large-5" }] }
+  large-6:  { runs-on: tenki-staging-standard-large-8c-16g, steps: [{ run: "sleep 60 && echo large-6" }] }
+  large-7:  { runs-on: tenki-staging-standard-large-8c-16g, steps: [{ run: "sleep 60 && echo large-7" }] }
+  large-8:  { runs-on: tenki-staging-standard-large-8c-16g, steps: [{ run: "sleep 60 && echo large-8" }] }
+  large-9:  { runs-on: tenki-staging-standard-large-8c-16g, steps: [{ run: "sleep 60 && echo large-9" }] }
+  large-10: { runs-on: tenki-staging-standard-large-8c-16g, steps: [{ run: "sleep 60 && echo large-10" }] }
+  large-11: { runs-on: tenki-staging-standard-large-8c-16g, steps: [{ run: "sleep 60 && echo large-11" }] }
+  large-12: { runs-on: tenki-staging-standard-large-8c-16g, steps: [{ run: "sleep 60 && echo large-12" }] }
+  large-13: { runs-on: tenki-staging-standard-large-8c-16g, steps: [{ run: "sleep 60 && echo large-13" }] }
+  large-14: { runs-on: tenki-staging-standard-large-8c-16g, steps: [{ run: "sleep 60 && echo large-14" }] }
+  large-15: { runs-on: tenki-staging-standard-large-8c-16g, steps: [{ run: "sleep 60 && echo large-15" }] }
+  large-16: { runs-on: tenki-staging-standard-large-8c-16g, steps: [{ run: "sleep 60 && echo large-16" }] }
+  large-17: { runs-on: tenki-staging-standard-large-8c-16g, steps: [{ run: "sleep 60 && echo large-17" }] }
+  large-18: { runs-on: tenki-staging-standard-large-8c-16g, steps: [{ run: "sleep 60 && echo large-18" }] }
+  large-19: { runs-on: tenki-staging-standard-large-8c-16g, steps: [{ run: "sleep 60 && echo large-19" }] }
+  large-20: { runs-on: tenki-staging-standard-large-8c-16g, steps: [{ run: "sleep 60 && echo large-20" }] }
+  large-21: { runs-on: tenki-staging-standard-large-8c-16g, steps: [{ run: "sleep 60 && echo large-21" }] }
+  large-22: { runs-on: tenki-staging-standard-large-8c-16g, steps: [{ run: "sleep 60 && echo large-22" }] }
+  large-23: { runs-on: tenki-staging-standard-large-8c-16g, steps: [{ run: "sleep 60 && echo large-23" }] }
+  large-24: { runs-on: tenki-staging-standard-large-8c-16g, steps: [{ run: "sleep 60 && echo large-24" }] }
+  large-25: { runs-on: tenki-staging-standard-large-8c-16g, steps: [{ run: "sleep 60 && echo large-25" }] }
+  large-26: { runs-on: tenki-staging-standard-large-8c-16g, steps: [{ run: "sleep 60 && echo large-26" }] }
+  large-27: { runs-on: tenki-staging-standard-large-8c-16g, steps: [{ run: "sleep 60 && echo large-27" }] }
+  large-28: { runs-on: tenki-staging-standard-large-8c-16g, steps: [{ run: "sleep 60 && echo large-28" }] }
+  large-29: { runs-on: tenki-staging-standard-large-8c-16g, steps: [{ run: "sleep 60 && echo large-29" }] }
+  large-30: { runs-on: tenki-staging-standard-large-8c-16g, steps: [{ run: "sleep 60 && echo large-30" }] }
+  large-31: { runs-on: tenki-staging-standard-large-8c-16g, steps: [{ run: "sleep 60 && echo large-31" }] }
+  large-32: { runs-on: tenki-staging-standard-large-8c-16g, steps: [{ run: "sleep 60 && echo large-32" }] }
+  large-33: { runs-on: tenki-staging-standard-large-8c-16g, steps: [{ run: "sleep 60 && echo large-33" }] }
+  large-34: { runs-on: tenki-staging-standard-large-8c-16g, steps: [{ run: "sleep 60 && echo large-34" }] }
+  large-35: { runs-on: tenki-staging-standard-large-8c-16g, steps: [{ run: "sleep 60 && echo large-35" }] }
