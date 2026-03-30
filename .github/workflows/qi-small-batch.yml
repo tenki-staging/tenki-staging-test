@@ -1,0 +1,10 @@
+name: "QI: Small Batch (5 jobs)"
+on:
+  workflow_dispatch:
+
+jobs:
+  small-1:  { runs-on: tenki-staging-standard-small-2c-4g, steps: [{ run: "sleep 60 && echo small-1" }] }
+  small-2:  { runs-on: tenki-staging-standard-small-2c-4g, steps: [{ run: "sleep 60 && echo small-2" }] }
+  small-3:  { runs-on: tenki-staging-standard-small-2c-4g, steps: [{ run: "sleep 60 && echo small-3" }] }
+  small-4:  { runs-on: tenki-staging-standard-small-2c-4g, steps: [{ run: "sleep 60 && echo small-4" }] }
+  small-5:  { runs-on: tenki-staging-standard-small-2c-4g, steps: [{ run: "sleep 60 && echo small-5" }] }
