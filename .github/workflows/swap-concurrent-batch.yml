@@ -3,23 +3,23 @@ on:
   workflow_dispatch:
 
 jobs:
-  swap-1: { runs-on: tenki-staging-standard-small-2c-4g, steps: [{ run: "sleep 30 && echo swap-1" }] }
-  swap-2: { runs-on: tenki-staging-standard-small-2c-4g, steps: [{ run: "sleep 30 && echo swap-2" }] }
-  swap-3: { runs-on: tenki-staging-standard-small-2c-4g, steps: [{ run: "sleep 30 && echo swap-3" }] }
-  swap-4: { runs-on: tenki-staging-standard-small-2c-4g, steps: [{ run: "sleep 30 && echo swap-4" }] }
-  swap-5: { runs-on: tenki-staging-standard-small-2c-4g, steps: [{ run: "sleep 30 && echo swap-5" }] }
-  swap-6: { runs-on: tenki-staging-standard-small-2c-4g, steps: [{ run: "sleep 30 && echo swap-6" }] }
-  swap-7: { runs-on: tenki-staging-standard-small-2c-4g, steps: [{ run: "sleep 30 && echo swap-7" }] }
-  swap-8: { runs-on: tenki-staging-standard-small-2c-4g, steps: [{ run: "sleep 30 && echo swap-8" }] }
-  swap-9: { runs-on: tenki-staging-standard-small-2c-4g, steps: [{ run: "sleep 30 && echo swap-9" }] }
-  swap-10: { runs-on: tenki-staging-standard-small-2c-4g, steps: [{ run: "sleep 30 && echo swap-10" }] }
-  swap-11: { runs-on: tenki-staging-standard-small-2c-4g, steps: [{ run: "sleep 30 && echo swap-11" }] }
-  swap-12: { runs-on: tenki-staging-standard-small-2c-4g, steps: [{ run: "sleep 30 && echo swap-12" }] }
-  swap-13: { runs-on: tenki-staging-standard-small-2c-4g, steps: [{ run: "sleep 30 && echo swap-13" }] }
-  swap-14: { runs-on: tenki-staging-standard-small-2c-4g, steps: [{ run: "sleep 30 && echo swap-14" }] }
-  swap-15: { runs-on: tenki-staging-standard-small-2c-4g, steps: [{ run: "sleep 30 && echo swap-15" }] }
-  swap-16: { runs-on: tenki-staging-standard-small-2c-4g, steps: [{ run: "sleep 30 && echo swap-16" }] }
-  swap-17: { runs-on: tenki-staging-standard-small-2c-4g, steps: [{ run: "sleep 30 && echo swap-17" }] }
-  swap-18: { runs-on: tenki-staging-standard-small-2c-4g, steps: [{ run: "sleep 30 && echo swap-18" }] }
-  swap-19: { runs-on: tenki-staging-standard-small-2c-4g, steps: [{ run: "sleep 30 && echo swap-19" }] }
-  swap-20: { runs-on: tenki-staging-standard-small-2c-4g, steps: [{ run: "sleep 30 && echo swap-20" }] }
+  swap-1: { runs-on: tenki-staging-standard-autoscale, steps: [{ run: "sleep 30 && echo swap-1" }] }
+  swap-2: { runs-on: tenki-staging-standard-autoscale, steps: [{ run: "sleep 30 && echo swap-2" }] }
+  swap-3: { runs-on: tenki-staging-standard-autoscale, steps: [{ run: "sleep 30 && echo swap-3" }] }
+  swap-4: { runs-on: tenki-staging-standard-autoscale, steps: [{ run: "sleep 30 && echo swap-4" }] }
+  swap-5: { runs-on: tenki-staging-standard-autoscale, steps: [{ run: "sleep 30 && echo swap-5" }] }
+  swap-6: { runs-on: tenki-staging-standard-autoscale, steps: [{ run: "sleep 30 && echo swap-6" }] }
+  swap-7: { runs-on: tenki-staging-standard-autoscale, steps: [{ run: "sleep 30 && echo swap-7" }] }
+  swap-8: { runs-on: tenki-staging-standard-autoscale, steps: [{ run: "sleep 30 && echo swap-8" }] }
+  swap-9: { runs-on: tenki-staging-standard-autoscale, steps: [{ run: "sleep 30 && echo swap-9" }] }
+  swap-10: { runs-on: tenki-staging-standard-autoscale, steps: [{ run: "sleep 30 && echo swap-10" }] }
+  swap-11: { runs-on: tenki-staging-standard-autoscale, steps: [{ run: "sleep 30 && echo swap-11" }] }
+  swap-12: { runs-on: tenki-staging-standard-autoscale, steps: [{ run: "sleep 30 && echo swap-12" }] }
+  swap-13: { runs-on: tenki-staging-standard-autoscale, steps: [{ run: "sleep 30 && echo swap-13" }] }
+  swap-14: { runs-on: tenki-staging-standard-autoscale, steps: [{ run: "sleep 30 && echo swap-14" }] }
+  swap-15: { runs-on: tenki-staging-standard-autoscale, steps: [{ run: "sleep 30 && echo swap-15" }] }
+  swap-16: { runs-on: tenki-staging-standard-autoscale, steps: [{ run: "sleep 30 && echo swap-16" }] }
+  swap-17: { runs-on: tenki-staging-standard-autoscale, steps: [{ run: "sleep 30 && echo swap-17" }] }
+  swap-18: { runs-on: tenki-staging-standard-autoscale, steps: [{ run: "sleep 30 && echo swap-18" }] }
+  swap-19: { runs-on: tenki-staging-standard-autoscale, steps: [{ run: "sleep 30 && echo swap-19" }] }
+  swap-20: { runs-on: tenki-staging-standard-autoscale, steps: [{ run: "sleep 30 && echo swap-20" }] }
