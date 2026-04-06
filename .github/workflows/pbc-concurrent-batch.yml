@@ -1,0 +1,25 @@
+name: "PBC: Concurrent Same-Label (20 jobs)"
+on:
+  workflow_dispatch:
+
+jobs:
+  pbc-1: { runs-on: tenki-staging-standard-autoscale, steps: [{ run: "sleep 30 && echo pbc-1" }] }
+  pbc-2: { runs-on: tenki-staging-standard-autoscale, steps: [{ run: "sleep 30 && echo pbc-2" }] }
+  pbc-3: { runs-on: tenki-staging-standard-autoscale, steps: [{ run: "sleep 30 && echo pbc-3" }] }
+  pbc-4: { runs-on: tenki-staging-standard-autoscale, steps: [{ run: "sleep 30 && echo pbc-4" }] }
+  pbc-5: { runs-on: tenki-staging-standard-autoscale, steps: [{ run: "sleep 30 && echo pbc-5" }] }
+  pbc-6: { runs-on: tenki-staging-standard-autoscale, steps: [{ run: "sleep 30 && echo pbc-6" }] }
+  pbc-7: { runs-on: tenki-staging-standard-autoscale, steps: [{ run: "sleep 30 && echo pbc-7" }] }
+  pbc-8: { runs-on: tenki-staging-standard-autoscale, steps: [{ run: "sleep 30 && echo pbc-8" }] }
+  pbc-9: { runs-on: tenki-staging-standard-autoscale, steps: [{ run: "sleep 30 && echo pbc-9" }] }
+  pbc-10: { runs-on: tenki-staging-standard-autoscale, steps: [{ run: "sleep 30 && echo pbc-10" }] }
+  pbc-11: { runs-on: tenki-staging-standard-autoscale, steps: [{ run: "sleep 30 && echo pbc-11" }] }
+  pbc-12: { runs-on: tenki-staging-standard-autoscale, steps: [{ run: "sleep 30 && echo pbc-12" }] }
+  pbc-13: { runs-on: tenki-staging-standard-autoscale, steps: [{ run: "sleep 30 && echo pbc-13" }] }
+  pbc-14: { runs-on: tenki-staging-standard-autoscale, steps: [{ run: "sleep 30 && echo pbc-14" }] }
+  pbc-15: { runs-on: tenki-staging-standard-autoscale, steps: [{ run: "sleep 30 && echo pbc-15" }] }
+  pbc-16: { runs-on: tenki-staging-standard-autoscale, steps: [{ run: "sleep 30 && echo pbc-16" }] }
+  pbc-17: { runs-on: tenki-staging-standard-autoscale, steps: [{ run: "sleep 30 && echo pbc-17" }] }
+  pbc-18: { runs-on: tenki-staging-standard-autoscale, steps: [{ run: "sleep 30 && echo pbc-18" }] }
+  pbc-19: { runs-on: tenki-staging-standard-autoscale, steps: [{ run: "sleep 30 && echo pbc-19" }] }
+  pbc-20: { runs-on: tenki-staging-standard-autoscale, steps: [{ run: "sleep 30 && echo pbc-20" }] }
