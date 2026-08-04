@@ -1,0 +1,65 @@
+# Repro for CLO-4342, modelled on a customer workflow (hiddenboox/planer deploy.yml).
+# Four properties matter, and all four must hold together:
+#   1. every job takes runs-on from a NON-matrix expression -> before the fix each job
+#      was Dynamic && !Matrix, so len(jobs)==0 and the whole workflow never reached
+#      repository_workflows, silently
+#   2. the capped job's name interpolates -> "Deploy analytics", which no stored
+#      literal can equal
+#   3. strategy.max-parallel: 1 -> GitHub serialises the legs, and that self-inflicted
+#      wait is what the queue-time KPI must exclude
+#   4. a static sibling literally named "Deploy gate" -> the template ^Deploy (.*)$
+#      also matches it, so it must resolve through the literal tier instead
+name: Deploy
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-main
+  cancel-in-progress: false
+
+jobs:
+  detect:
+    name: Detect affected apps
+    runs-on: ${{ vars.DEPLOY_RUNNER || 'ubuntu-latest' }}
+    timeout-minutes: 10
+    outputs:
+      apps: ${{ steps.detect.outputs.apps_json }}
+      has_apps: ${{ steps.detect.outputs.has_apps }}
+    steps:
+      - id: detect
+        shell: bash
+        run: |
+          set -euo pipefail
+          APPS='["analytics","api","admin","storybook"]'
+          echo "apps_json=$APPS" >> "$GITHUB_OUTPUT"
+          echo "has_apps=true" >> "$GITHUB_OUTPUT"
+          echo "apps: $APPS"
+
+  deploy:
+    name: Deploy ${{ matrix.app }}
+    needs: detect
+    if: ${{ needs.detect.outputs.has_apps == 'true' }}
+    runs-on: ${{ vars.DEPLOY_RUNNER || 'ubuntu-latest' }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        app: ${{ fromJSON(needs.detect.outputs.apps) }}
+    steps:
+      - shell: bash
+        run: |
+          echo "deploying ${{ matrix.app }}"
+          sleep 40
+          echo "deployed ${{ matrix.app }}"
+
+  gate:
+    name: Deploy gate
+    needs: [detect, deploy]
+    if: ${{ always() && !cancelled() }}
+    runs-on: ${{ vars.DEPLOY_RUNNER || 'ubuntu-latest' }}
+    timeout-minutes: 10
+    steps:
+      - shell: bash
+        run: echo "gate ok (deploy=${{ needs.deploy.result }})"
