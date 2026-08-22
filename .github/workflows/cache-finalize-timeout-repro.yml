@@ -54,49 +54,60 @@ jobs:
     name: preflight
     runs-on: ${{ inputs.runner_label }}
     outputs:
-      via_guest_proxy: ${{ steps.wiring.outputs.via_guest_proxy }}
+      verdict: ${{ steps.wiring.outputs.verdict }}
     steps:
       - name: Cache endpoint this runner was handed
         id: wiring
         run: |
           set -uo pipefail
           RESULTS="${ACTIONS_RESULTS_URL:-}"
-          LEGACY="${ACTIONS_CACHE_URL:-}"
           echo "ACTIONS_RESULTS_URL = ${RESULTS:-<unset>}"
-          echo "ACTIONS_CACHE_URL   = ${LEGACY:-<unset>}"
+          echo "ACTIONS_CACHE_URL   = ${ACTIONS_CACHE_URL:-<unset>}"
+          echo "--- cache entries in /etc/hosts ---"
+          grep -i cache /etc/hosts || echo "(none)"
 
-          # A private-range endpoint means the in-VM guest proxy is in the path,
-          # which is the precondition for the timeout under test. A github.com
-          # endpoint means this workspace has no Tenki Actions cache configured.
-          VIA=false
-          case "$RESULTS" in
-            http://10.*|http://172.1[6-9].*|http://172.2[0-9].*|http://172.3[01].*|http://192.168.*) VIA=true ;;
+          # The guest proxy binds the data port on the VM's primary address and
+          # the control port on loopback. The loopback control port exists only
+          # when configure() actually started the proxy, which needs a non-empty
+          # ActionsCacheClaim — and the proxy is what imposes the timeout under
+          # test. So this single probe separates "cache wired through the proxy"
+          # from "cache wired straight to the upstream".
+          CTRL=down
+          if (exec 3<>/dev/tcp/127.0.0.1/49194) 2>/dev/null; then CTRL=up; fi
+          echo "guest proxy control port 49194 = $CTRL"
+
+          if [ -z "$RESULTS" ]; then
+            VERDICT=cache_off
+          elif [ "$CTRL" = up ]; then
+            VERDICT=guest_proxy
+          else
+            VERDICT=direct_upstream
+          fi
+          echo "verdict=$VERDICT" >> "$GITHUB_OUTPUT"
+
+          case "$VERDICT" in
+            cache_off)
+              echo "VERDICT cache_off — no Actions cache endpoint reached this job."
+              echo "Next: node-agent is not supplying a cache host. Check cache.actions_cache,"
+              echo "cache.cache_host_ip and cache.cache_hosts on this node, and that a staging"
+              echo "proxycache is actually reachable at that address."
+              echo "::warning::cache_off — repro not possible yet"
+              ;;
+            direct_upstream)
+              echo "VERDICT direct_upstream — cache is wired, but straight to the upstream."
+              echo "Next: engine issued no actions_cache_claim, so vm-agent returned the upstream"
+              echo "URL and never started the guest proxy. Set actions_cache_claim"
+              echo "(audience / active_key_id / signing_key) or the timeout stays out of the path."
+              echo "::warning::direct_upstream — claim missing, repro not possible yet"
+              curl -sS -m 10 -o /dev/null -w 'upstream probe: HTTP %{http_code} in %{time_total}s\n' "$RESULTS" || true
+              ;;
+            guest_proxy)
+              echo "VERDICT guest_proxy — the guest proxy IS in the path. Repro is possible; run mode=repro."
+              curl -sS -m 10 -o /dev/null -w 'twirp probe: HTTP %{http_code} in %{time_total}s\n' \
+                -X POST -H 'Content-Type: application/json' -d '{}' \
+                "${RESULTS%/}/twirp/github.actions.results.api.v1.CacheService/FinalizeCacheEntryUpload" || true
+              ;;
           esac
-          echo "via_guest_proxy=$VIA" >> "$GITHUB_OUTPUT"
-
-          if [ "$VIA" = true ]; then
-            echo "Guest proxy IS in the path — repro is possible here."
-            curl -sS -m 10 -o /dev/null -w 'twirp probe: HTTP %{http_code} in %{time_total}s\n' \
-              -X POST -H 'Content-Type: application/json' -d '{}' \
-              "${RESULTS%/}/twirp/github.actions.results.api.v1.CacheService/FinalizeCacheEntryUpload" || true
-          else
-            echo "::warning::No Tenki Actions cache endpoint on this runner; the guest proxy is not in the path."
-          fi
-
-      - name: Runner shape and vm-agent identity
-        run: |
-          set -uo pipefail
-          echo "nproc = $(nproc)"
-          free -g | sed -n '1,2p'
-          df -h /home/runner /tmp | sed -n '1,5p'
-          BIN=/usr/local/bin/vm-agent
-          if [ -f "$BIN" ]; then
-            echo "vm-agent sha256 = $(sha256sum "$BIN" | cut -d' ' -f1)"
-            echo "vm-agent size   = $(stat -c %s "$BIN") bytes"
-            echo "vm-agent mtime  = $(stat -c %y "$BIN")"
-          else
-            echo "$BIN not present"
-          fi
 
       # Whether this vm-agent can host the guest cache proxy at all. Go symbol
       # names live in a compressed pclntab and cannot be grepped, but string
@@ -140,7 +151,7 @@ jobs:
             echo "| field | value |"
             echo "| --- | --- |"
             echo "| ACTIONS_RESULTS_URL | \`${ACTIONS_RESULTS_URL:-<unset>}\` |"
-            echo "| guest proxy in path | ${{ steps.wiring.outputs.via_guest_proxy }} |"
+            echo "| verdict | **${{ steps.wiring.outputs.verdict }}** |"
             echo "| runner | \`$(hostname)\` |"
             echo "| nproc | $(nproc) |"
             echo "| vm-agent has guest proxy | ${{ steps.capability.outputs.capable }} |"
