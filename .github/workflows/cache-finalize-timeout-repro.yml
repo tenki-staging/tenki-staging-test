@@ -26,12 +26,12 @@ on:
       runner_label:
         description: Runner pool to run on
         required: false
-        default: tenki-staging-standard-large-8c-16g
+        default: tenki-staging-standard-small-2c-4g
         type: string
       padding_gb:
-        description: Incompressible GB added to the cache (0 = cargo cache only)
+        description: Incompressible GB added to the cache (0 = cargo cache only). Clamped to free disk.
         required: false
-        default: "4"
+        default: "2"
         type: string
       mode:
         description: preflight = report cache wiring only; repro = build, pad and save
@@ -139,13 +139,10 @@ jobs:
           edition = "2021"
 
           [dependencies]
-          tokio = { version = "1", features = ["full"] }
+          tokio = { version = "1", features = ["rt-multi-thread", "macros", "time"] }
           serde = { version = "1", features = ["derive"] }
           serde_json = "1"
           regex = "1"
-          clap = { version = "4", features = ["derive"] }
-          tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-          reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
           TOML
           cat > rust-repro/src/main.rs <<'RS'
           fn main() {
@@ -173,8 +170,23 @@ jobs:
       - name: Pad the cache to size
         run: |
           set -euo pipefail
-          GB="${{ inputs.padding_gb }}"
+          WANT="${{ inputs.padding_gb }}"
           mkdir -p ~/repro-padding
+
+          # rust-cache writes cache.tzst next to the workspace on this same disk,
+          # and the padding is incompressible, so the tarball is about as large as
+          # the padding. Budget for both plus headroom or the save dies on ENOSPC,
+          # which looks nothing like the timeout under test.
+          AVAIL_MB=$(df -Pm "$HOME" | awk 'NR==2{print $4}')
+          MAX_GB=$(( (AVAIL_MB - 3072) / 2048 ))
+          [ "$MAX_GB" -lt 0 ] && MAX_GB=0
+          GB="$WANT"
+          if [ "$GB" -gt "$MAX_GB" ]; then
+            echo "::warning::padding clamped from ${WANT}G to ${MAX_GB}G (only ${AVAIL_MB}MB free); a smaller cache may not trip the timeout"
+            GB="$MAX_GB"
+          fi
+          echo "padding = ${GB}G (requested ${WANT}G, free ${AVAIL_MB}MB)"
+
           if [ "$GB" -gt 0 ]; then
             # Incompressible, or zstd would shrink it back below the threshold.
             for i in $(seq 1 "$GB"); do
