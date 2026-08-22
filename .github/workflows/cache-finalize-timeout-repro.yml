@@ -98,6 +98,40 @@ jobs:
             echo "$BIN not present"
           fi
 
+      # Whether this vm-agent can host the guest cache proxy at all. Go symbol
+      # names live in a compressed pclntab and cannot be grepped, but string
+      # constants sit in rodata and can. Checking this costs one job; the
+      # alternative (delete snapshot, inject binary, rebuild snapshot) does not.
+      - name: Does this vm-agent have the guest cache proxy
+        id: capability
+        run: |
+          set -uo pipefail
+          BIN=/usr/local/bin/vm-agent
+          if [ ! -f "$BIN" ]; then
+            echo "capable=unknown" >> "$GITHUB_OUTPUT"
+            echo "$BIN not present"
+            exit 0
+          fi
+          MISSING=0
+          for pat in \
+            "/tenki/actions-cache/v1/register" \
+            "github.actions.results.api.v1.CacheService" \
+            "cache upstream unavailable"; do
+            if grep -a -q "$pat" "$BIN"; then
+              echo "present: $pat"
+            else
+              echo "MISSING: $pat"
+              MISSING=1
+            fi
+          done
+          if [ "$MISSING" -eq 0 ]; then
+            echo "capable=true" >> "$GITHUB_OUTPUT"
+            echo "This vm-agent CAN host the guest cache proxy; an unset ACTIONS_RESULTS_URL points at engine/node-agent config, not at this binary."
+          else
+            echo "capable=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::This vm-agent predates the guest cache proxy; it needs a rollout (and a snapshot rebuild) before the repro can work."
+          fi
+
       - name: Summary
         run: |
           {
@@ -109,6 +143,7 @@ jobs:
             echo "| guest proxy in path | ${{ steps.wiring.outputs.via_guest_proxy }} |"
             echo "| runner | \`$(hostname)\` |"
             echo "| nproc | $(nproc) |"
+            echo "| vm-agent has guest proxy | ${{ steps.capability.outputs.capable }} |"
           } >> "$GITHUB_STEP_SUMMARY"
 
   repro:
