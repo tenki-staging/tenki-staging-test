@@ -1,0 +1,197 @@
+name: Repro cache finalize timeout
+
+# Reproduces the guest-proxy response-header timeout that aborts
+# FinalizeCacheEntryUpload on large Actions caches.
+#
+# Signature we are hunting, from hashbender/elph run 32578990222:
+#   Sent <N> of <N> (100.0%)
+#   Attempt 1 of 5 failed with error: Unexpected token 'c', "cache upst"... is not valid JSON
+#   ##[warning]Failed to save: Failed to FinalizeCacheEntryUpload: ... (404) Not Found
+# The gap between the first two lines is a constant 30.0s: vm-agent's guest
+# cache proxy bounds upstream response headers, and finalize merges every block
+# (and syncs to R2) before it writes one.
+#
+# Kept deliberately close to elph: swatinem/rust-cache@v2.9.1, cache-provider
+# github, Rust 1.97.0, real cargo registry + target content.
+#
+# Cache size is the only variable that matters, and compiling elph's dependency
+# tree to reach ~2 GB would take the better part of an hour, so the cargo cache
+# is padded with incompressible bytes to hit a target size in under a minute.
+# Keep padding_gb under ~9: the cache service rejects entries over its
+# max_upload_size (10 GB by default) with a 413, which is a different failure.
+
+on:
+  workflow_dispatch:
+    inputs:
+      runner_label:
+        description: Runner pool to run on
+        required: false
+        default: tenki-staging-standard-large-8c-16g
+        type: string
+      padding_gb:
+        description: Incompressible GB added to the cache (0 = cargo cache only)
+        required: false
+        default: "4"
+        type: string
+      mode:
+        description: preflight = report cache wiring only; repro = build, pad and save
+        required: false
+        default: preflight
+        type: choice
+        options: [preflight, repro]
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  CI: true
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+
+jobs:
+  preflight:
+    name: preflight
+    runs-on: ${{ inputs.runner_label }}
+    outputs:
+      via_guest_proxy: ${{ steps.wiring.outputs.via_guest_proxy }}
+    steps:
+      - name: Cache endpoint this runner was handed
+        id: wiring
+        run: |
+          set -uo pipefail
+          RESULTS="${ACTIONS_RESULTS_URL:-}"
+          LEGACY="${ACTIONS_CACHE_URL:-}"
+          echo "ACTIONS_RESULTS_URL = ${RESULTS:-<unset>}"
+          echo "ACTIONS_CACHE_URL   = ${LEGACY:-<unset>}"
+
+          # A private-range endpoint means the in-VM guest proxy is in the path,
+          # which is the precondition for the timeout under test. A github.com
+          # endpoint means this workspace has no Tenki Actions cache configured.
+          VIA=false
+          case "$RESULTS" in
+            http://10.*|http://172.1[6-9].*|http://172.2[0-9].*|http://172.3[01].*|http://192.168.*) VIA=true ;;
+          esac
+          echo "via_guest_proxy=$VIA" >> "$GITHUB_OUTPUT"
+
+          if [ "$VIA" = true ]; then
+            echo "Guest proxy IS in the path — repro is possible here."
+            curl -sS -m 10 -o /dev/null -w 'twirp probe: HTTP %{http_code} in %{time_total}s\n' \
+              -X POST -H 'Content-Type: application/json' -d '{}' \
+              "${RESULTS%/}/twirp/github.actions.results.api.v1.CacheService/FinalizeCacheEntryUpload" || true
+          else
+            echo "::warning::No Tenki Actions cache endpoint on this runner; the guest proxy is not in the path."
+          fi
+
+      - name: Runner shape and vm-agent identity
+        run: |
+          set -uo pipefail
+          echo "nproc = $(nproc)"
+          free -g | sed -n '1,2p'
+          df -h /home/runner /tmp | sed -n '1,5p'
+          BIN=/usr/local/bin/vm-agent
+          if [ -f "$BIN" ]; then
+            echo "vm-agent sha256 = $(sha256sum "$BIN" | cut -d' ' -f1)"
+            echo "vm-agent size   = $(stat -c %s "$BIN") bytes"
+            echo "vm-agent mtime  = $(stat -c %y "$BIN")"
+          else
+            echo "$BIN not present"
+          fi
+
+      - name: Summary
+        run: |
+          {
+            echo "### Preflight"
+            echo
+            echo "| field | value |"
+            echo "| --- | --- |"
+            echo "| ACTIONS_RESULTS_URL | \`${ACTIONS_RESULTS_URL:-<unset>}\` |"
+            echo "| guest proxy in path | ${{ steps.wiring.outputs.via_guest_proxy }} |"
+            echo "| runner | \`$(hostname)\` |"
+            echo "| nproc | $(nproc) |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  repro:
+    name: repro (${{ inputs.padding_gb }}G padding)
+    needs: preflight
+    if: ${{ inputs.mode == 'repro' }}
+    runs-on: ${{ inputs.runner_label }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install toolchain
+        uses: dtolnay/rust-toolchain@v1
+        with:
+          toolchain: 1.97.0
+          components: clippy, rustfmt
+
+      # A real cargo workspace, so the cached bytes are a genuine registry +
+      # target tree rather than only padding.
+      - name: Create cargo workspace
+        run: |
+          set -euo pipefail
+          mkdir -p rust-repro/src
+          cat > rust-repro/Cargo.toml <<'TOML'
+          [package]
+          name = "cache-repro"
+          version = "0.1.0"
+          edition = "2021"
+
+          [dependencies]
+          tokio = { version = "1", features = ["full"] }
+          serde = { version = "1", features = ["derive"] }
+          serde_json = "1"
+          regex = "1"
+          clap = { version = "4", features = ["derive"] }
+          tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+          reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
+          TOML
+          cat > rust-repro/src/main.rs <<'RS'
+          fn main() {
+              println!("cache repro");
+          }
+          RS
+          cd rust-repro && cargo generate-lockfile
+
+      - name: Cache Cargo
+        uses: swatinem/rust-cache@v2.9.1
+        with:
+          # Unique per run: forces a cold restore and a real save every time,
+          # so a prior hit can never mask the save path under test.
+          shared-key: repro-${{ github.run_id }}-${{ inputs.padding_gb }}g
+          workspaces: rust-repro
+          cache-directories: ~/repro-padding
+          cache-on-failure: true
+          cache-bin: false
+          save-if: "true"
+          cache-provider: github
+
+      - name: Build
+        run: cd rust-repro && cargo build
+
+      - name: Pad the cache to size
+        run: |
+          set -euo pipefail
+          GB="${{ inputs.padding_gb }}"
+          mkdir -p ~/repro-padding
+          if [ "$GB" -gt 0 ]; then
+            # Incompressible, or zstd would shrink it back below the threshold.
+            for i in $(seq 1 "$GB"); do
+              dd if=/dev/urandom of="$HOME/repro-padding/pad-$i.bin" bs=1M count=1024 status=none
+            done
+          fi
+          du -sh ~/repro-padding rust-repro/target ~/.cargo/registry 2>/dev/null || true
+
+      - name: What the post step is about to save
+        run: |
+          {
+            echo "### Repro job"
+            echo
+            echo "Padding: ${{ inputs.padding_gb }} GB"
+            echo
+            echo "The cache save runs in this job's **post** step, below the last"
+            echo "step above. Look there for \`Sent … (100.0%)\` followed 30s later"
+            echo "by \`\"cache upst\"… is not valid JSON\`."
+          } >> "$GITHUB_STEP_SUMMARY"
+
