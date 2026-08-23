@@ -1,0 +1,72 @@
+# CLO-4632: does a job on the sandbox route reach the Actions cache through the
+# host-side proxy, with its ref scope registered? Verdicts only — this repo and
+# its logs are public.
+name: cache claim probe
+
+on:
+  workflow_dispatch:
+
+jobs:
+  host:
+    runs-on: tenki-staging-standard-small-2c-4g
+    steps:
+      - name: endpoint the job was handed
+        run: |
+          set +e
+          GW=$(ip route | awk '/^default/{print $3; exit}')
+          RESULTS=$(env | grep -m1 '^ACTIONS_RESULTS_URL=' | cut -d= -f2-)
+          TENKI=$(env | grep -m1 '^TENKI_CACHE_URL=' | cut -d= -f2-)
+          HOST=$(printf '%s' "$RESULTS" | sed 's|.*://||; s|[:/].*||')
+
+          echo "results_url_set=$([ -n "$RESULTS" ] && echo yes || echo no)"
+          echo "results_url_is_an_ip=$(printf '%s' "$HOST" | grep -qE '^[0-9.]+$' && echo yes || echo no)"
+          echo "results_url_is_the_default_gateway=$([ -n "$HOST" ] && [ "$HOST" = "$GW" ] && echo yes || echo no)"
+          echo "tenki_cache_url_set=$([ -n "$TENKI" ] && echo yes || echo no)"
+          echo "tenki_cache_url_equals_results_url=$([ -n "$TENKI" ] && [ "$TENKI" = "$RESULTS" ] && echo yes || echo no)"
+
+          # /etc/environment must no longer carry these: the hook grants them per job.
+          echo "etc_environment_still_has_actions=$(grep -c '^ACTIONS_' /etc/environment 2>/dev/null || echo 0)"
+
+          J=/tmp/current_job_info.json
+          cat "$J" >/dev/null 2>&1 || sudo chmod +r "$J" 2>/dev/null
+          for k in github_repository_id github_ref_type github_head_ref github_base_ref; do
+            echo "hook_wrote_$k=$(grep -c "\"$k\"" "$J" 2>/dev/null || echo 0)"
+          done
+
+      - uses: actions/cache@v4
+        id: restore
+        with:
+          path: cache-probe
+          key: claim-probe-${{ github.ref_name }}-v1
+
+      - name: cache outcome
+        run: echo "host_cache_hit=${{ steps.restore.outputs.cache-hit }}"
+
+      - name: leave something for the save
+        run: mkdir -p cache-probe && date -u > cache-probe/stamp
+
+  container:
+    runs-on: tenki-staging-standard-small-2c-4g
+    container:
+      image: ubuntu:24.04
+    steps:
+      - name: install probes
+        run: apt-get update -qq && apt-get install -y -qq curl ca-certificates >/dev/null
+
+      - name: endpoint inside a container
+        run: |
+          set +e
+          echo "results_url_set=$(env | grep -cm1 '^ACTIONS_RESULTS_URL=')"
+          echo "tenki_cache_url_set=$(env | grep -cm1 '^TENKI_CACHE_URL=')"
+
+      - uses: actions/cache@v4
+        id: restore
+        with:
+          path: cache-probe-container
+          key: claim-probe-container-${{ github.ref_name }}-v1
+
+      - name: cache outcome
+        run: echo "container_cache_hit=${{ steps.restore.outputs.cache-hit }}"
+
+      - name: leave something for the save
+        run: mkdir -p cache-probe-container && date -u > cache-probe-container/stamp
