@@ -20,7 +20,6 @@ jobs:
 
           echo "results_url_set=$([ -n "$RESULTS" ] && echo yes || echo no)"
           echo "results_url_is_an_ip=$(printf '%s' "$HOST" | grep -qE '^[0-9.]+$' && echo yes || echo no)"
-          echo "results_url_is_the_default_gateway=$([ -n "$HOST" ] && [ "$HOST" = "$GW" ] && echo yes || echo no)"
           echo "tenki_cache_url_set=$([ -n "$TENKI" ] && echo yes || echo no)"
           echo "tenki_cache_url_equals_results_url=$([ -n "$TENKI" ] && [ "$TENKI" = "$RESULTS" ] && echo yes || echo no)"
 
@@ -36,23 +35,14 @@ jobs:
       - name: how the job reaches that endpoint
         run: |
           set +e
-          GW=$(ip route | awk '/^default/{print $3; exit}')
           IFACE=$(ip route | awk '/^default/{print $5; exit}')
           RESULTS=$(env | grep -m1 '^ACTIONS_RESULTS_URL=' | cut -d= -f2-)
           HOST=$(printf '%s' "$RESULTS" | sed 's|.*://||; s|[:/].*||')
-          SELF=$(ip -o -4 addr show dev "$IFACE" 2>/dev/null | awk '{print $4}' | head -1)
 
-          # Last octets and prefix length only: enough to explain the verdict
-          # without publishing the internal network in a public log.
-          echo "default_routes=$(ip route | grep -c '^default')"
-          echo "iface=$IFACE"
-          echo "iface_prefixlen=$(printf '%s' "$SELF" | cut -d/ -f2)"
-          echo "iface_last_octet=$(printf '%s' "$SELF" | cut -d/ -f1 | cut -d. -f4)"
-          echo "gw_last_octet=$(printf '%s' "$GW" | cut -d. -f4)"
-          echo "endpoint_last_octet=$(printf '%s' "$HOST" | cut -d. -f4)"
-          echo "endpoint_same_24_as_gw=$([ "$(printf '%s' "$GW" | cut -d. -f1-3)" = "$(printf '%s' "$HOST" | cut -d. -f1-3)" ] && echo yes || echo no)"
-          echo "endpoint_reached=$(ip route get "$HOST" 2>/dev/null | head -1 | grep -qw via && echo via_gateway || echo on_link)"
+          # The proxy binds the slot's NSPeerIP, which is not the address the
+          # guest calls its default gateway. Reachability is the property.
           echo "endpoint_is_local_to_iface=$(ip route get "$HOST" 2>/dev/null | head -1 | grep -qw "$IFACE" && echo yes || echo no)"
+          echo "endpoint_answers=$(curl -s -o /dev/null -m 5 -w '%{http_code}' "$RESULTS" 2>/dev/null || echo 000)"
 
       - uses: actions/cache@v4
         id: restore
