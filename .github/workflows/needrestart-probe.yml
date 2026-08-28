@@ -55,9 +55,11 @@ jobs:
           for var in JAVA_HOME RUNNER_TOOL_CACHE AGENT_TOOLSDIRECTORY; do
             if [ -z "${!var:-}" ]; then missing="$missing $var"; else echo "$var=${!var}"; fi
           done
-          # Endpoints are not printed: this repository is public.
+          # Reported, not asserted: the local debug API this probe drives pins the
+          # job's cache config to empty, so these two are never set on this path.
+          # Endpoints are not printed either - this repository is public.
           for var in GOPROXY TENKI_CACHE_URL; do
-            if [ -z "${!var:-}" ]; then missing="$missing $var"; else echo "$var is set"; fi
+            if [ -z "${!var:-}" ]; then echo "$var unset (cache pinned off by the probe harness)"; else echo "$var is set"; fi
           done
           echo "HOME=$HOME user=$(id -un)"
           echo "versioned toolchain variants visible: $(env | grep -cE '^(JAVA_HOME_[0-9]+_X64|GOROOT_1_[0-9]+_X64)=')"
