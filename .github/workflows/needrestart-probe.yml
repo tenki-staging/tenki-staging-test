@@ -1,19 +1,22 @@
 name: Probe needrestart killing the runner
 
 # Reproduces the failure that killed a real job on the sandbox runner path:
-# a step apt-installs something linking libssl, needrestart decides a batch of
-# units needs restarting, guest-agent.service is in that batch, and the runner
-# dies with it because it lives in that unit's cgroup. See
+# needrestart restarts guest-agent.service mid-job, and the runner dies with it
+# because it lives in that unit's cgroup. See
 # https://github.com/LuxorLabs/tenki.app/actions/runs/32982565208/job/98223347033
-# where the same chain took the runner down 4.6 ms after the restart.
+# where the runner took the signal 4.6 ms after the restart.
 #
-# On the old arrangement this job cannot reach its last step. On the new one -
-# the runner handed to PID 1 as its own transient unit - it runs to completion.
-# The first step prints which arrangement is actually in play, so a pass is
-# attributable rather than lucky.
+# What actually makes needrestart pick guest-agent is NOT the libssl upgrade in
+# that log: guest-agent is a static binary and links no shared library. It is
+# picked because its binary was replaced under the running process - which the
+# sandbox stack does whenever the node-agent's bundled guest-agent differs from
+# the one baked into the image - so the process maps a deleted file. The apt
+# transaction is only what makes needrestart run at all. Step 2 recreates that
+# condition rather than hoping the archive happens to be ahead of the image.
 #
-# Report-only about the environment: this repository is public, so no variable
-# values are printed.
+# The last step fails if guest-agent was never restarted. A green run that
+# never triggered the fault proves nothing, and this probe refuses to produce
+# one.
 
 on:
   workflow_dispatch:
@@ -31,29 +34,49 @@ jobs:
       - name: Where does this runner live
         run: |
           set -u
-          echo "runner pid $$"
           echo "cgroup: $(cat /proc/$$/cgroup)"
-          # The whole bug in one line. guest-agent.service means the old
-          # arrangement and this job is expected to die two steps from now.
           case "$(cat /proc/$$/cgroup)" in
             *guest-agent.service*) echo "ARRANGEMENT=old (inside guest-agent)" ;;
             *tenki-runner-*)       echo "ARRANGEMENT=new (own transient unit)" ;;
             *)                     echo "ARRANGEMENT=unknown" ;;
           esac
-          echo "guest-agent started at: $(systemctl show -p ActiveEnterTimestamp --value guest-agent.service)"
+          systemctl show -p ActiveEnterTimestamp --value guest-agent.service > /tmp/ga-before
+          echo "guest-agent started at: $(cat /tmp/ga-before)"
 
-      - name: Upgrade libssl so needrestart fires
+      - name: Make needrestart want to restart guest-agent, then run apt
         run: |
           set -u
-          sudo apt-get update -qq
-          sudo apt-get install -y build-essential libssl-dev 2>&1 | tail -20
+          P=$(systemctl show -p MainPID --value guest-agent.service)
+          echo "guest-agent pid $P, deleted mappings before: $(sudo grep -c deleted /proc/$P/maps || true)"
+          # Replace the binary under the running process, which is what a
+          # guest-agent version bump does to a live VM.
+          sudo cp /usr/local/bin/sandbox /tmp/ga-copy
+          sudo mv /tmp/ga-copy /usr/local/bin/sandbox
+          echo "deleted mappings after:  $(sudo grep -c deleted /proc/$P/maps || true)"
+          sudo NEEDRESTART_MODE=a apt-get install -y --reinstall libssl3t64 2>&1 | tail -15
 
-      - name: Still here
+      - name: Restart guest-agent directly if needrestart declined
         run: |
           set -u
-          echo "the job survived the needrestart pass"
+          NOW=$(systemctl show -p ActiveEnterTimestamp --value guest-agent.service)
+          if [ "$NOW" = "$(cat /tmp/ga-before)" ]; then
+            echo "needrestart left it alone; taking the same action it takes"
+            sudo systemctl restart guest-agent.service
+            sleep 5
+          else
+            echo "needrestart restarted it on its own"
+          fi
+
+      - name: The fault fired and the job is still here
+        run: |
+          set -u
+          BEFORE=$(cat /tmp/ga-before)
+          AFTER=$(systemctl show -p ActiveEnterTimestamp --value guest-agent.service)
+          echo "guest-agent before: $BEFORE"
+          echo "guest-agent after:  $AFTER"
           echo "cgroup: $(cat /proc/$$/cgroup)"
-          echo "guest-agent started at: $(systemctl show -p ActiveEnterTimestamp --value guest-agent.service)"
-          # A restart timestamp later than the one printed in step 1 is the
-          # proof that needrestart actually fired; without it this job proves
-          # nothing.
+          if [ "$BEFORE" = "$AFTER" ]; then
+            echo "::error::guest-agent was never restarted - this run proves nothing"
+            exit 1
+          fi
+          echo "the job outlived a guest-agent restart"
