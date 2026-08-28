@@ -43,6 +43,36 @@ jobs:
           systemctl show -p ActiveEnterTimestamp --value guest-agent.service > /tmp/ga-before
           echo "guest-agent started at: $(cat /tmp/ga-before)"
 
+      - name: The toolchain environment survived the unit split
+        run: |
+          set -u
+          # The runner used to be a child of guest-agent and inherited its
+          # environment. It is started by pid 1 now, so the ~49 variables the
+          # image bakes reach a job only because the node-agent copies them into
+          # the unit's EnvironmentFile. If that copy ever breaks, setup-* actions
+          # silently re-download what /opt/hostedtoolcache already holds.
+          missing=""
+          for var in JAVA_HOME RUNNER_TOOL_CACHE AGENT_TOOLSDIRECTORY; do
+            if [ -z "${!var:-}" ]; then missing="$missing $var"; else echo "$var=${!var}"; fi
+          done
+          # Endpoints are not printed: this repository is public.
+          for var in GOPROXY TENKI_CACHE_URL; do
+            if [ -z "${!var:-}" ]; then missing="$missing $var"; else echo "$var is set"; fi
+          done
+          echo "HOME=$HOME user=$(id -un)"
+          echo "versioned toolchain variants visible: $(env | grep -cE '^(JAVA_HOME_[0-9]+_X64|GOROOT_1_[0-9]+_X64)=')"
+          # Set is not enough - it has to point at the toolcache the image baked.
+          if [ -n "${RUNNER_TOOL_CACHE:-}" ] && [ -d "$RUNNER_TOOL_CACHE" ]; then
+            echo "toolcache entries: $(ls -1 "$RUNNER_TOOL_CACHE" | wc -l)"
+          else
+            missing="$missing RUNNER_TOOL_CACHE(no-such-dir)"
+          fi
+          if [ -n "$missing" ]; then
+            echo "::error::missing from the job environment:$missing"
+            exit 1
+          fi
+          echo "the toolchain environment survived the unit split"
+
       - name: Make needrestart want to restart guest-agent, then run apt
         run: |
           set -u
