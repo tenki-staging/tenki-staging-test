@@ -1,0 +1,59 @@
+name: Probe needrestart killing the runner
+
+# Reproduces the failure that killed a real job on the sandbox runner path:
+# a step apt-installs something linking libssl, needrestart decides a batch of
+# units needs restarting, guest-agent.service is in that batch, and the runner
+# dies with it because it lives in that unit's cgroup. See
+# https://github.com/LuxorLabs/tenki.app/actions/runs/32982565208/job/98223347033
+# where the same chain took the runner down 4.6 ms after the restart.
+#
+# On the old arrangement this job cannot reach its last step. On the new one -
+# the runner handed to PID 1 as its own transient unit - it runs to completion.
+# The first step prints which arrangement is actually in play, so a pass is
+# attributable rather than lucky.
+#
+# Report-only about the environment: this repository is public, so no variable
+# values are printed.
+
+on:
+  workflow_dispatch:
+    inputs:
+      runner_label:
+        description: "Runner pool to probe"
+        required: false
+        default: "tenki-1b-needrestart-probe"
+        type: string
+
+jobs:
+  probe:
+    runs-on: ${{ inputs.runner_label || 'tenki-1b-needrestart-probe' }}
+    steps:
+      - name: Where does this runner live
+        run: |
+          set -u
+          echo "runner pid $$"
+          echo "cgroup: $(cat /proc/$$/cgroup)"
+          # The whole bug in one line. guest-agent.service means the old
+          # arrangement and this job is expected to die two steps from now.
+          case "$(cat /proc/$$/cgroup)" in
+            *guest-agent.service*) echo "ARRANGEMENT=old (inside guest-agent)" ;;
+            *tenki-runner-*)       echo "ARRANGEMENT=new (own transient unit)" ;;
+            *)                     echo "ARRANGEMENT=unknown" ;;
+          esac
+          echo "guest-agent started at: $(systemctl show -p ActiveEnterTimestamp --value guest-agent.service)"
+
+      - name: Upgrade libssl so needrestart fires
+        run: |
+          set -u
+          sudo apt-get update -qq
+          sudo apt-get install -y build-essential libssl-dev 2>&1 | tail -20
+
+      - name: Still here
+        run: |
+          set -u
+          echo "the job survived the needrestart pass"
+          echo "cgroup: $(cat /proc/$$/cgroup)"
+          echo "guest-agent started at: $(systemctl show -p ActiveEnterTimestamp --value guest-agent.service)"
+          # A restart timestamp later than the one printed in step 1 is the
+          # proof that needrestart actually fired; without it this job proves
+          # nothing.
