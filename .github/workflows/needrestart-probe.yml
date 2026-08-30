@@ -86,21 +86,18 @@ jobs:
           sudo mv /tmp/ga-copy /usr/local/bin/sandbox
           echo "deleted mappings after:  $(sudo grep -c deleted /proc/$P/maps || true)"
           sudo NEEDRESTART_MODE=a apt-get install -y --reinstall libssl3t64 2>&1 | tail -15
-
-      - name: Can the runner still reach GitHub
-        run: |
-          set -u
-          # If the answer is "no", this step's output never reaches GitHub either.
-          # The node-agent's guest process snapshot is the one channel that still
-          # works from outside, so the verdict is published as a process name.
+          # Checked here, not in a later step: if the runner cannot reach GitHub it
+          # never reports this step finished, so no later step ever runs. The node
+          # agent's guest process snapshot is the only channel left, hence the
+          # verdict is published as a process name.
           dns=BAD
           getent hosts api.github.com >/dev/null 2>&1 && dns=OK
           http=$(curl -sS -m 10 -o /dev/null -w '%{http_code}' https://api.github.com 2>/dev/null || echo 000)
-          gw=$(ip route | awk '/^default/{print $3; exit}')
           addr=$(ip -br addr show scope global | awk '{print $3}' | head -1)
-          echo "dns=$dns http=$http addr=$addr gw=$gw"
-          ip -br addr; ip route
-          sudo sh -c "exec -a TENKIPROBE-dns=$dns-http=$http-addr=${addr:-none}-gw=${gw:-none} sleep 420" &
+          gw=$(ip route | awk '/^default/{print $3; exit}')
+          ns=$(awk '/^nameserver/{print $2; exit}' /etc/resolv.conf)
+          echo "dns=$dns http=$http addr=$addr gw=$gw ns=$ns"
+          sudo sh -c "exec -a TENKIPROBE-dns=$dns-http=$http-addr=${addr:-none}-gw=${gw:-none}-ns=${ns:-none} sleep 600" &
           sleep 3
 
       - name: Restart guest-agent directly if needrestart declined
