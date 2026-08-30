@@ -24,12 +24,12 @@ on:
       runner_label:
         description: "Runner pool to probe"
         required: false
-        default: "tenki-1b-needrestart-probe"
+        default: "tenki-staging-standard-small-2c-4g"
         type: string
 
 jobs:
   probe:
-    runs-on: ${{ inputs.runner_label || 'tenki-1b-needrestart-probe' }}
+    runs-on: ${{ inputs.runner_label || 'tenki-staging-standard-small-2c-4g' }}
     steps:
       - name: Where does this runner live
         run: |
