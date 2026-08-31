@@ -87,7 +87,11 @@ jobs:
           publish_verdict() {
             dns=BAD
             getent hosts api.github.com >/dev/null 2>&1 && dns=OK
-            http=$(curl -sS -m 10 -o /dev/null -w '%{http_code}' https://api.github.com 2>/dev/null)
+            # `|| true` is load-bearing: the step runs under bash -e, so an
+            # unreachable GitHub would abort it before the verdict is published -
+            # which is exactly the case this probe exists to observe. curl prints
+            # 000 itself on a connection failure, so nothing is appended.
+            http=$(curl -sS -m 10 -o /dev/null -w '%{http_code}' https://api.github.com 2>/dev/null || true)
             [ -n "$http" ] || http=000
             # A slash cannot appear in the file name the verdict rides in, and an
             # unwritable name would drop the whole reading silently.
