@@ -87,8 +87,11 @@ jobs:
           publish_verdict() {
             dns=BAD
             getent hosts api.github.com >/dev/null 2>&1 && dns=OK
-            http=$(curl -sS -m 10 -o /dev/null -w '%{http_code}' https://api.github.com 2>/dev/null || echo 000)
-            addr=$(ip -br addr show scope global | awk '{print $3}' | head -1)
+            http=$(curl -sS -m 10 -o /dev/null -w '%{http_code}' https://api.github.com 2>/dev/null)
+            [ -n "$http" ] || http=000
+            # A slash cannot appear in the file name the verdict rides in, and an
+            # unwritable name would drop the whole reading silently.
+            addr=$(ip -4 -o addr show scope global | awk '{print $4; exit}' | tr '/' '_')
             gw=$(ip route | awk '/^default/{print $3; exit}')
             ns=$(awk '/^nameserver/{print $2; exit}' /etc/resolv.conf)
             verdict="TENKIPROBE-$1-dns=$dns-http=$http-addr=${addr:-none}-gw=${gw:-none}-ns=${ns:-none}"
