@@ -78,6 +78,27 @@ jobs:
       - name: Make needrestart want to restart guest-agent, then run apt
         run: |
           set -u
+          # The node agent's guest process snapshot reports comm and the
+          # executable path, and `exec -a` changes neither - it only sets
+          # argv[0]. So the verdict rides in the file name instead, which the
+          # snapshot prints in full. This is the only channel left once the
+          # guest cannot reach GitHub: the step never concludes, so no later
+          # step runs and no job log escapes.
+          publish_verdict() {
+            dns=BAD
+            getent hosts api.github.com >/dev/null 2>&1 && dns=OK
+            http=$(curl -sS -m 10 -o /dev/null -w '%{http_code}' https://api.github.com 2>/dev/null || echo 000)
+            addr=$(ip -br addr show scope global | awk '{print $3}' | head -1)
+            gw=$(ip route | awk '/^default/{print $3; exit}')
+            ns=$(awk '/^nameserver/{print $2; exit}' /etc/resolv.conf)
+            verdict="TENKIPROBE-$1-dns=$dns-http=$http-addr=${addr:-none}-gw=${gw:-none}-ns=${ns:-none}"
+            echo "$verdict"
+            sudo cp /bin/sleep "/tmp/$verdict"
+            sudo "/tmp/$verdict" 600 &
+          }
+          # Baseline first: without it a bad reading after the restart cannot be
+          # told apart from one that was already bad.
+          publish_verdict before
           P=$(systemctl show -p MainPID --value guest-agent.service)
           echo "guest-agent pid $P, deleted mappings before: $(sudo grep -c deleted /proc/$P/maps || true)"
           # Replace the binary under the running process, which is what a
@@ -86,18 +107,7 @@ jobs:
           sudo mv /tmp/ga-copy /usr/local/bin/sandbox
           echo "deleted mappings after:  $(sudo grep -c deleted /proc/$P/maps || true)"
           sudo NEEDRESTART_MODE=a apt-get install -y --reinstall libssl3t64 2>&1 | tail -15
-          # Checked here, not in a later step: if the runner cannot reach GitHub it
-          # never reports this step finished, so no later step ever runs. The node
-          # agent's guest process snapshot is the only channel left, hence the
-          # verdict is published as a process name.
-          dns=BAD
-          getent hosts api.github.com >/dev/null 2>&1 && dns=OK
-          http=$(curl -sS -m 10 -o /dev/null -w '%{http_code}' https://api.github.com 2>/dev/null || echo 000)
-          addr=$(ip -br addr show scope global | awk '{print $3}' | head -1)
-          gw=$(ip route | awk '/^default/{print $3; exit}')
-          ns=$(awk '/^nameserver/{print $2; exit}' /etc/resolv.conf)
-          echo "dns=$dns http=$http addr=$addr gw=$gw ns=$ns"
-          sudo sh -c "exec -a TENKIPROBE-dns=$dns-http=$http-addr=${addr:-none}-gw=${gw:-none}-ns=${ns:-none} sleep 600" &
+          publish_verdict after
           sleep 3
 
       - name: Restart guest-agent directly if needrestart declined
