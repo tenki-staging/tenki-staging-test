@@ -1,0 +1,49 @@
+# Does a job's own /etc/resolv.conf survive the node-agent's liveness pass?
+# Reproduces the CPPR auth setup: a local dnsmasq owns *.tenki.lab and forwards
+# everything else upstream. Self-asserting — it fails if the platform reverts it.
+name: guest dns drift probe
+
+on:
+  workflow_dispatch:
+
+jobs:
+  dns:
+    runs-on: tenki-staging-standard-small-2c-4g
+    timeout-minutes: 10
+    steps:
+      - name: point resolv.conf at a local dnsmasq
+        run: |
+          set -euo pipefail
+          echo "runner=${RUNNER_NAME:-?}"
+          UPSTREAMS=$(awk '/^nameserver/{print $2}' /run/systemd/resolve/resolv.conf 2>/dev/null | grep -vE '^127\.' | sort -u)
+          [ -z "$UPSTREAMS" ] && UPSTREAMS="1.1.1.1"
+          echo "upstreams: $UPSTREAMS"
+          sudo apt-get update -qq && sudo apt-get install -y -qq dnsmasq-base >/dev/null
+          SERVERS=""; for u in $UPSTREAMS; do SERVERS="$SERVERS --server=$u"; done
+          sudo dnsmasq --pid-file=/tmp/probe-dnsmasq.pid --no-resolv \
+            --address=/tenki.lab/127.0.0.1 \
+            --listen-address=127.0.0.1 --bind-interfaces $SERVERS
+          sudo rm -f /etc/resolv.conf
+          echo "nameserver 127.0.0.1" | sudo tee /etc/resolv.conf >/dev/null
+          getent hosts app.tenki.lab | grep -q '127.0.0.1' \
+            || { echo "::error::setup failed, *.tenki.lab does not resolve"; exit 1; }
+          echo "--- resolv.conf before ---"; cat /etc/resolv.conf
+
+      - name: wait past two liveness ticks
+        run: sleep 75
+
+      - name: our resolver must still be there
+        run: |
+          set -uo pipefail
+          echo "--- resolv.conf after ---"; cat /etc/resolv.conf
+          if grep -q '^nameserver 1\.1\.1\.1$' /etc/resolv.conf; then
+            echo "note: the platform appended its own resolver, which is expected"
+          fi
+          fail=0
+          grep -q '^nameserver 127\.0\.0\.1$' /etc/resolv.conf \
+            || { echo "::error::the platform removed our resolver from resolv.conf"; fail=1; }
+          getent hosts app.tenki.lab | grep -q '127.0.0.1' \
+            || { echo "::error::*.tenki.lab stopped resolving"; fail=1; }
+          getent hosts github.com >/dev/null 2>&1 \
+            || { echo "::error::external DNS is broken"; fail=1; }
+          exit $fail
