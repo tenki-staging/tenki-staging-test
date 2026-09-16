@@ -126,3 +126,55 @@ jobs:
           getent hosts github.com >/dev/null 2>&1
           echo "external_via_stub_rc=$?"
           exit 0
+
+  # A fixed-identity mesh restore never runs tenki_configure_network -- it only
+  # records what the guest should have. Drift repair is the one path on such a
+  # host that does run it, so this job induces hostname drift and checks that
+  # the repair leaves glibc pointed at the stub.
+  via-drift-repair:
+    runs-on: tenki-staging-standard-small-2c-4g
+    timeout-minutes: 15
+    steps:
+      - name: "before: this guest carries whatever the base snapshot baked in"
+        run: |
+          set +e
+          echo "runner=${RUNNER_NAME:-?}"
+          echo "hostname=$(hostname)"
+          cat /etc/resolv.conf
+          getent ahostsv4 site-a.localhost
+          echo "localhost_before_rc=$?"
+          exit 0
+
+      - name: "induce hostname drift, which the host repairs over vsock"
+        run: |
+          set +e
+          sudo hostname tenki-drift-probe
+          echo "hostname_now=$(hostname)"
+          exit 0
+
+      - name: "wait for the host to notice and repair"
+        run: sleep 100
+
+      - name: "the repair must leave glibc pointed at the stub"
+        run: |
+          set +e
+          fail=0
+          echo "hostname=$(hostname)"
+          echo "--- resolv.conf after repair ---"
+          cat /etc/resolv.conf
+          grep -q '127\.0\.0\.53' /etc/resolv.conf
+          if [ $? -ne 0 ]; then
+            echo "::error::the repair ran but did not point glibc at the stub"
+            fail=1
+          fi
+          getent ahostsv4 site-a.localhost
+          if [ $? -ne 0 ]; then
+            echo "::error::*.localhost still does not resolve after the repair"
+            fail=1
+          fi
+          getent hosts github.com > /dev/null 2>&1
+          if [ $? -ne 0 ]; then
+            echo "::error::external DNS is broken after the repair"
+            fail=1
+          fi
+          exit $fail
