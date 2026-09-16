@@ -1,0 +1,92 @@
+# Does *.localhost resolve inside a sandbox guest?
+#
+# *.localhost has no /etc/hosts entry and no authoritative server. It resolves
+# only because systemd-resolved synthesizes it (RFC 6761), and glibc reaches
+# resolved only through /etc/resolv.conf pointing at the stub 127.0.0.53 --
+# the guest's nsswitch has no `resolve` module. The sandbox restore path used
+# to replace that stub with `nameserver $DNS`, sending the lookup out of the
+# guest to NXDOMAIN. CLO-4855 re-establishes the stub.
+#
+# Self-asserting: it fails if a guest cannot resolve *.localhost.
+name: guest localhost probe
+
+on:
+  workflow_dispatch:
+
+jobs:
+  localhost:
+    runs-on: tenki-staging-standard-small-2c-4g
+    timeout-minutes: 10
+    steps:
+      - name: "this must be the sandbox path, or the probe proves nothing"
+        run: |
+          set -uo pipefail
+          echo "runner=${RUNNER_NAME:-?}"
+          case "${RUNNER_NAME:-}" in
+            tenki-sandbox-*) echo "route=sandbox" ;;
+            tenki-*) echo "::error::legacy route -- this job never exercised the sandbox restore path"; exit 1 ;;
+            *) echo "::error::unrecognised runner name, cannot tell which path this is"; exit 1 ;;
+          esac
+
+      - name: "how this guest is wired for DNS"
+        run: |
+          set -uo pipefail
+          if [ -L /etc/resolv.conf ]; then kind=symlink
+          elif [ -f /etc/resolv.conf ]; then kind=regular_file
+          else kind=absent; fi
+          echo "resolv_conf_kind=$kind"
+          echo "--- /etc/resolv.conf ---"
+          cat /etc/resolv.conf 2>&1
+          echo "--- nsswitch hosts line ---"
+          grep '^hosts:' /etc/nsswitch.conf 2>&1
+          echo "--- resolvectl status ---"
+          resolvectl status 2>&1 | head -40
+
+      - name: "resolved must synthesize it, and glibc must reach resolved"
+        run: |
+          set -uo pipefail
+          fail=0
+
+          # Asking resolved directly separates a broken resolver from a severed
+          # route to it. This answered even while the bug was live.
+          echo "--- resolvectl query (resolved itself) ---"
+          if resolvectl query site-a.localhost 2>&1; then
+            echo "resolved_synthesizes=yes"
+          else
+            echo "::error::systemd-resolved does not synthesize *.localhost at all"
+            fail=1
+          fi
+
+          # The assertion that was failing: glibc's own route to resolved.
+          echo "--- getent (what a workload actually calls) ---"
+          if getent ahostsv4 site-a.localhost 2>&1; then
+            echo "getent_localhost=resolved"
+          else
+            echo "::error::getent cannot resolve site-a.localhost -- the stub is not in glibc's path"
+            fail=1
+          fi
+
+          # Regression guard: pointing glibc at resolved must not break egress.
+          if getent hosts github.com >/dev/null 2>&1; then
+            echo "external_dns=ok"
+          else
+            echo "::error::external DNS is broken"
+            fail=1
+          fi
+
+          exit $fail
+
+      - name: "the customer's shape: serve on loopback, reach it by name"
+        run: |
+          set -uo pipefail
+          python3 -m http.server 8181 --bind 127.0.0.1 >/tmp/probe-http.log 2>&1 &
+          for _ in $(seq 1 20); do
+            curl -sf -o /dev/null http://127.0.0.1:8181/ && break
+            sleep 0.5
+          done
+          if curl -sf -o /dev/null --max-time 10 http://site-a.localhost:8181/; then
+            echo "curl_site_a_localhost=ok"
+          else
+            echo "::error::cannot reach a loopback service by its *.localhost name"
+            exit 1
+          fi
