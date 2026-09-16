@@ -99,3 +99,30 @@ jobs:
           fi
           echo "::error::cannot reach a loopback service by its *.localhost name"
           exit 1
+
+      # Only on failure: replay the fix's own guards so the log says which one
+      # bailed, instead of leaving "the stub was not established" unexplained.
+      - name: "which guard bailed"
+        if: failure()
+        run: |
+          set +e
+          LINK=$(ip -o route show default | awk '{print $5; exit}')
+          echo "link=$LINK"
+          awk -v d=1.1.1.1 '$1=="nameserver" && $2!=d && $2!="127.0.0.53" {exit 1}' /etc/resolv.conf
+          echo "awk_guard_rc=$?  (0 = file is ours, fix may proceed)"
+          command -v resolvectl >/dev/null 2>&1; echo "resolvectl_present_rc=$?"
+          command -v timeout >/dev/null 2>&1; echo "timeout_present_rc=$?"
+          timeout 1 sudo resolvectl dns "$LINK" 1.1.1.1
+          echo "resolvectl_dns_rc=$?"
+          timeout 1 sudo resolvectl domain "$LINK" '~.'
+          echo "resolvectl_domain_rc=$?"
+          echo "--- did resolved take it? ---"
+          resolvectl status "$LINK" 2>&1 | sed -n '1,12p'
+          echo "--- with the stub in place, does getent work? ---"
+          sudo rm -f /etc/resolv.conf
+          printf 'nameserver 127.0.0.53\noptions edns0\n' | sudo tee /etc/resolv.conf >/dev/null
+          getent ahostsv4 tenki-stub-probe.localhost
+          echo "getent_stub_rc=$?"
+          getent hosts github.com >/dev/null 2>&1
+          echo "external_via_stub_rc=$?"
+          exit 0
