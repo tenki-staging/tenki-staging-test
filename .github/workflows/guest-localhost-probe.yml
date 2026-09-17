@@ -178,3 +178,57 @@ jobs:
             fail=1
           fi
           exit $fail
+
+  # Does the guest still reach the outside world through the stub WITHOUT any
+  # resolvectl call? If yes the runtime cost of the fix is zero -- leaving the
+  # stub alone is strictly less work than today's rm-and-rewrite.
+  stub-without-resolvectl:
+    runs-on: tenki-staging-standard-small-2c-4g
+    timeout-minutes: 10
+    steps:
+      - name: "what supplies resolved's upstream before anyone calls resolvectl"
+        run: |
+          set +e
+          echo "--- /etc/systemd/resolved.conf (non-comment) ---"
+          grep -vE '^\s*#|^\s*$' /etc/systemd/resolved.conf 2>&1
+          echo "--- drop-ins ---"
+          ls -la /etc/systemd/resolved.conf.d/ 2>&1
+          cat /etc/systemd/resolved.conf.d/* 2>/dev/null
+          echo "--- resolved global scope, untouched ---"
+          resolvectl status > /tmp/rs0.txt 2>&1
+          sed -n '1,8p' /tmp/rs0.txt
+          exit 0
+
+      - name: "point glibc at the stub and make NO resolvectl call"
+        run: |
+          set +e
+          sudo rm -f /etc/resolv.conf
+          printf 'nameserver 127.0.0.53\noptions edns0\n' | sudo tee /etc/resolv.conf >/dev/null
+          cat /etc/resolv.conf
+          fail=0
+          getent ahostsv4 site-a.localhost
+          if [ $? -ne 0 ]; then echo "::error::*.localhost failed via stub alone"; fail=1; fi
+          getent hosts github.com > /dev/null 2>&1
+          if [ $? -ne 0 ]; then
+            echo "::error::external DNS failed through the stub with no resolvectl"
+            fail=1
+          else
+            echo "external_via_stub_without_resolvectl=ok"
+          fi
+          exit $fail
+
+      - name: "measure what the resolvectl calls would have cost"
+        run: |
+          set +e
+          LINK=$(ip -o route show default | awk '{print $5; exit}')
+          S=$(date +%s%N)
+          sudo resolvectl dns "$LINK" 1.1.1.1
+          M=$(date +%s%N)
+          sudo resolvectl domain "$LINK" '~.'
+          E=$(date +%s%N)
+          echo "resolvectl_dns_ms=$(( (M-S)/1000000 ))"
+          echo "resolvectl_domain_ms=$(( (E-M)/1000000 ))"
+          echo "resolvectl_total_ms=$(( (E-S)/1000000 ))"
+          S=$(date +%s%N); getent ahostsv4 tenki-cost-probe.localhost >/dev/null 2>&1; E=$(date +%s%N)
+          echo "getent_selfcheck_ms=$(( (E-S)/1000000 ))"
+          exit 0
