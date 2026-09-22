@@ -129,8 +129,12 @@ jobs:
 
   # A fixed-identity mesh restore never runs tenki_configure_network -- it only
   # records what the guest should have. Drift repair is the one path on such a
-  # host that does run it, so this job induces hostname drift and checks that
-  # the repair leaves glibc pointed at the stub.
+  # host that does run it, so this job induces hostname drift to make it run.
+  #
+  # A guest restored from a snapshot baked before CLO-4855 carries no ownership
+  # marker, so the resolver step must leave its resolv.conf alone: it cannot be
+  # told apart from one a job wrote. The hostname coming back proves the script
+  # ran, and resolv.conf staying put proves the guard held.
   via-drift-repair:
     runs-on: tenki-staging-standard-small-2c-4g
     timeout-minutes: 15
@@ -155,23 +159,28 @@ jobs:
       - name: "wait for the host to notice and repair"
         run: sleep 100
 
-      - name: "the repair must leave glibc pointed at the stub"
+      - name: "the repair must run and must not touch an unmarked resolv.conf"
         run: |
           set +e
           fail=0
           echo "hostname=$(hostname)"
           echo "--- resolv.conf after repair ---"
           cat /etc/resolv.conf
-          grep -q '127\.0\.0\.53' /etc/resolv.conf
-          if [ $? -ne 0 ]; then
-            echo "::error::the repair ran but did not point glibc at the stub"
+
+          case "$(hostname)" in
+            tenki-drift-probe)
+              echo "::error::the host never repaired the drift, so the script never ran"
+              fail=1 ;;
+            *) echo "script_ran=yes" ;;
+          esac
+
+          if grep -q '# Managed by tenki' /etc/resolv.conf; then
+            echo "::error::an unmarked resolv.conf was taken over; it is indistinguishable from a job's"
             fail=1
+          else
+            echo "unmarked_resolv_conf_left_alone=yes"
           fi
-          getent ahostsv4 site-a.localhost
-          if [ $? -ne 0 ]; then
-            echo "::error::*.localhost still does not resolve after the repair"
-            fail=1
-          fi
+
           getent hosts github.com > /dev/null 2>&1
           if [ $? -ne 0 ]; then
             echo "::error::external DNS is broken after the repair"
