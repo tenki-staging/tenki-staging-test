@@ -1,0 +1,25 @@
+name: macOS sandbox debug probe
+
+on:
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: tenki-macos-debug-probe
+    timeout-minutes: 20
+    steps:
+      - name: Who and where
+        run: |
+          echo "user=$(whoami) uid=$(id -u) groups=$(id -G | wc -w)"
+          echo "host=$(hostname)"
+          sw_vers
+          uname -m
+      - name: Runner context
+        run: |
+          echo "runner_name=$RUNNER_NAME"
+          echo "workspace=$RUNNER_WORKSPACE"
+          df -h / | tail -1
+      - name: Do some work
+        run: |
+          python3 -c "print(sum(range(1000000)))"
+          echo ok > /tmp/probe.txt && cat /tmp/probe.txt
