@@ -5,7 +5,7 @@ on:
 
 jobs:
   probe:
-    runs-on: tenki-macos-debug-probe
+    runs-on: tenki-staging-macos-mini
     timeout-minutes: 20
     steps:
       - name: Who and where
