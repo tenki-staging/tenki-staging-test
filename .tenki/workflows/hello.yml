@@ -1,6 +1,7 @@
 name: hello
 on:
   push:
+  workflow_dispatch:
 jobs:
   hello:
     runs-on: tenki-staging-standard-small-2c-4g
