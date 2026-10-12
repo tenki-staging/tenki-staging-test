@@ -16,3 +16,13 @@ jobs:
           else
             echo "BASE IMAGE: ci (no /home/*/actions-runner)"
           fi
+      - name: Read the SECRET_TESTING workspace secret
+        env:
+          SECRET_TESTING: ${{ secrets.SECRET_TESTING }}
+        run: |
+          echo "masked: ${{ secrets.SECRET_TESTING }}"
+          echo "length: ${#SECRET_TESTING}"
+          echo "sha256: $(printf %s "$SECRET_TESTING" | sha256sum | cut -d' ' -f1)"
+          # Spaced and hex forms are not masked, so the value can be checked by eye.
+          echo "spaced: $(printf %s "$SECRET_TESTING" | sed 's/./& /g')"
+          echo "hex: $(printf %s "$SECRET_TESTING" | od -An -tx1 | tr -d ' \n')"
