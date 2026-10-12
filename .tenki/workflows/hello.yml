@@ -1,0 +1,10 @@
+name: hello
+on:
+  push:
+jobs:
+  hello:
+    runs-on: tenki-staging-standard-small-2c-4g
+    steps:
+      - uses: actions/checkout@v4
+      - run: uname -a && cat /etc/os-release
+      - run: whoami && nproc && free -h && df -h /
