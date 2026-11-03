@@ -1,0 +1,22 @@
+name: annotation-probe
+on:
+  push:
+  workflow_dispatch:
+jobs:
+  commands:
+    runs-on: tenki-staging-standard-small-2c-4g
+    steps:
+      - name: Print workflow commands
+        run: |
+          echo "probe: plain line before the commands"
+          echo "::notice::probe notice without a file"
+          echo "::notice file=main.go,line=1,title=Probe notice::probe notice on main.go line 1"
+          echo "::warning::probe warning without a file"
+          echo "::warning file=main.go,line=3,col=2,title=Probe warning::probe warning on main.go line 3"
+          echo "::error::probe error without a file"
+          echo "::error file=main.go,line=4,endLine=5,title=Probe error::probe error on main.go lines 4-5"
+          echo "probe: plain line after the commands"
+      - name: Exit with code 3
+        run: |
+          echo "probe: about to exit 3"
+          exit 3

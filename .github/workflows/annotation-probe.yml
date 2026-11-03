@@ -1,0 +1,29 @@
+name: Annotation probe
+
+on:
+  push:
+    branches:
+      - claude/annotation-probe
+
+permissions:
+  contents: read
+  checks: write
+
+jobs:
+  same-name-check-runs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create a failed check run, then a passing one with the same name
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          create() {
+            curl --fail-with-body -sS -X POST \
+              -H "Authorization: Bearer $GITHUB_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/${GITHUB_REPOSITORY}/check-runs" \
+              -d "$1" | jq -r '"created check run \(.id): \(.name) \(.conclusion)"'
+          }
+          create '{"name":"Annotation probe / retried job","head_sha":"'"$GITHUB_SHA"'","status":"completed","conclusion":"failure","output":{"title":"Attempt 1 failed","summary":"First attempt.","annotations":[{"path":"main.go","start_line":1,"end_line":1,"annotation_level":"failure","message":"attempt 1 failure"}]}}'
+          sleep 10
+          create '{"name":"Annotation probe / retried job","head_sha":"'"$GITHUB_SHA"'","status":"completed","conclusion":"success","output":{"title":"Attempt 2 passed","summary":"Second attempt, same name."}}'
