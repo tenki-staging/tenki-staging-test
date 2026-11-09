@@ -14,7 +14,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Sleep and Print
         run: |
-          sleep 900
+          sleep 60
           echo 11111111111111111111111111111
 
   build-2:
@@ -23,7 +23,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Sleep and Print
         run: |
-          sleep 900
+          sleep 60
           echo 222222222222
 
   # build-3:
