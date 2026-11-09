@@ -1,0 +1,31 @@
+name: Placement test
+
+# Manual only: starts one runner job per entry in `jobs` for the CLO-5393 placement-tier test.
+on:
+  workflow_dispatch:
+    inputs:
+      jobs:
+        description: "JSON array, one parallel job per entry, e.g. [1,2,3]"
+        required: true
+        default: "[1,2,3]"
+      label:
+        description: "runs-on label"
+        required: true
+        default: "tenki-staging-standard-xlarge-32c-128g"
+      sleep:
+        description: "Seconds each job sleeps"
+        required: true
+        default: "180"
+
+jobs:
+  job:
+    runs-on: ${{ inputs.label }}
+    strategy:
+      fail-fast: false
+      matrix:
+        i: ${{ fromJSON(inputs.jobs) }}
+    steps:
+      - name: Hold the runner
+        run: |
+          echo "job ${{ matrix.i }} on $(hostname)"
+          sleep ${{ inputs.sleep }}
