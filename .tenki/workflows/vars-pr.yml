@@ -1,0 +1,14 @@
+name: vars-pr
+on:
+  pull_request:
+jobs:
+  print:
+    runs-on: luxor-staging-ubuntu-small-2c-4g
+    timeout-minutes: 10
+    steps:
+      - name: Print the variable
+        run: echo "API_URL=[${{ vars.API_URL }}]"
+      - name: Check the TOKEN secret
+        env:
+          TOKEN: ${{ secrets.TOKEN }}
+        run: echo "TOKEN length=${#TOKEN}"
