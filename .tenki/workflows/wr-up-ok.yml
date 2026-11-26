@@ -1,0 +1,10 @@
+name: WR Up OK
+on:
+  push:
+    branches: [main]
+    paths: ["wr-probe/ok/**"]
+jobs:
+  work:
+    runs-on: tenki-staging-standard-small-2c-4g
+    steps:
+      - run: echo ok

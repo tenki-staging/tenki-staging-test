@@ -1,0 +1,10 @@
+name: WR Chain A
+on:
+  push:
+    branches: [main]
+    paths: ["wr-probe/chain/**"]
+jobs:
+  work:
+    runs-on: tenki-staging-standard-small-2c-4g
+    steps:
+      - run: echo a

@@ -1,0 +1,18 @@
+name: WR Chain D
+on:
+  workflow_run:
+    workflows: ["WR Chain C"]
+    types: [completed]
+    branches: [main]
+jobs:
+  report:
+    runs-on: tenki-staging-standard-small-2c-4g
+    steps:
+      - run: >-
+          echo "wr-probe upstream=${{ github.event.workflow_run.name }}
+          conclusion=${{ github.event.workflow_run.conclusion }}
+          event=${{ github.event.workflow_run.event }}
+          head_branch=${{ github.event.workflow_run.head_branch }}
+          run_attempt=${{ github.event.workflow_run.run_attempt }}
+          upstream_id=${{ github.event.workflow_run.id }}
+          event_name=${{ github.event_name }}"

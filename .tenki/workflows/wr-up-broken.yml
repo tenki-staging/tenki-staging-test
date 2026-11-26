@@ -1,0 +1,10 @@
+name: WR Up Broken
+on:
+  push:
+    branches: [main]
+    paths: ["wr-probe/broken/**"]
+jobs:
+  work:
+    runs-on: wr-probe-no-such-label
+    steps:
+      - run: echo never
