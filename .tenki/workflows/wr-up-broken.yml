@@ -3,6 +3,7 @@ on:
   push:
     branches: [main]
     paths: ["wr-probe/broken/**"]
+  workflow_dispatch:
 jobs:
   work:
     runs-on: wr-probe-no-such-label

@@ -3,6 +3,7 @@ on:
   push:
     branches: [main]
     paths: ["wr-probe/fail/**"]
+  workflow_dispatch:
 jobs:
   work:
     runs-on: tenki-staging-standard-small-2c-4g
